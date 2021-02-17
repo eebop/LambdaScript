@@ -27,7 +27,7 @@ readline.set_history_length(1000)
 readline.set_completer(completer)
 
 class CalcLexer(Lexer):
-    tokens = {IF, THEN, ELSE, NAME, NUMBER, PLUS, TIMES, MINUS, DIVIDE, ASSIGN, COLONASSIGN, LPAREN, RPAREN, COMMA, EXPONENT, LBRACKET, RBRACKET, EQUALEQUAL, COMMENT, NEWLINE, STRING, LCURLYBRACE, RCURLYBRACE, GREATERTHEN, LESSTHEN, NOT, MOD}
+    tokens = {IF, THEN, ELSE, NAME, NUMBER, PLUS, TIMES, MINUS, DIVIDE, ASSIGN, COLONASSIGN, LPAREN, RPAREN, COMMA, EXPONENT, LBRACKET, RBRACKET, EQUALEQUAL, COMMENT, NEWLINE, STRING, LCURLYBRACE, RCURLYBRACE, GREATERTHEN, LESSTHEN, NOT, MOD, SEMI}
     ignore = ' \t'
 
 
@@ -64,6 +64,7 @@ class CalcLexer(Lexer):
     LESSTHEN = r'<'
     NOT = '!'
     MOD = '%'
+    SEMI = ';'
 
 
 
@@ -91,7 +92,7 @@ class CalcParser(Parser):
         ('left', GREATERTHEN, LESSTHEN),
         ('left', IF, THEN, ELSE),
         ('right', UMINUS, UPLUS),
-        ('left', NEWLINE),
+        ('left', NEWLINE, SEMI),
 
         )
 
@@ -131,6 +132,10 @@ class CalcParser(Parser):
         except LookupError:
             print(f'Undefined name {name!r}')
             raise Cancel
+
+    @_('expr SEMI expr')
+    def expr(self, p):
+        return p.expr1
 
     @_('expr GREATERTHEN expr')
     def expr(self, p):
@@ -596,6 +601,13 @@ class CalcParser(Parser):
             return p.MOD + ' ' + p.dot_star
         else:
             return p.MOD
+
+    @_('SEMI dot_star')
+    def dot_star(self, p):
+        if p.dot_star:
+            return p.SEMI + ' ' + p.dot_star
+        else:
+            return p.SEMI
 
 
     # @_('DO dot_star')
