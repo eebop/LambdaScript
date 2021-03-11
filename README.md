@@ -146,11 +146,11 @@ To run:
 ./__main__.py
 ```
 Or, if you want a command line script to do it.
-##### Linix:
+#### Linix:
 ```
 echo 'alias LambdaScript="python3 `pwd`"' >> ~/.bashrc
 ```
-##### On Mac:
+#### Mac:
 ```
 echo 'alias LambdaScript="python3 `pwd`"' >> ~/.bash_profile
 ```
@@ -159,5 +159,3 @@ Then:
 bash
 LambdaScript
 ```
-
-### DEPENDENCIES
