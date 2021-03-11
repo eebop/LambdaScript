@@ -108,7 +108,7 @@ Global variables can be signified with a leading `@`
 >> OneOffObject.data
 'e'
 ```
-You *can* create classes, just make a lambda that returns the objects.
+You *can* create classes, but you have to make a lambda that returns the objects.
 ```
 >> MyClass = {{@data = d}[d]}
 >> MyObject1 = MyClass ()
@@ -130,3 +130,6 @@ lambda = { @data = d } ['d']
 >> MyObject2.data
 'K'
 ```
+Note: _No_ initializing work is done for you. You'll have to build that into the class
+Of course, objects can have functions...
+TODO
