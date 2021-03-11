@@ -27,7 +27,10 @@ readline.set_history_length(1000)
 readline.set_completer(completer)
 
 class CalcLexer(Lexer):
-    tokens = {IF, THEN, ELSE, NAME, NUMBER, PLUS, TIMES, MINUS, DIVIDE, ASSIGN, COLONASSIGN, LPAREN, RPAREN, COMMA, EXPONENT, LBRACKET, RBRACKET, EQUALEQUAL, COMMENT, NEWLINE, STRING, LCURLYBRACE, RCURLYBRACE, GREATERTHEN, LESSTHEN, NOT, MOD, SEMI}
+    tokens = {IF, THEN, ELSE, NAME, NUMBER, PLUS, TIMES, MINUS, DIVIDE, ASSIGN,
+    COLONASSIGN, LPAREN, RPAREN, COMMA, EXPONENT, LBRACKET, RBRACKET, EQUALEQUAL,
+    COMMENT, NEWLINE, STRING, LCURLYBRACE, RCURLYBRACE, GREATERTHEN, LESSTHEN, NOT,
+    MOD, SEMI, WHILE, DO, GLOBAL, DOT}
     ignore = ' \t'
 
 
@@ -36,11 +39,12 @@ class CalcLexer(Lexer):
     IF = 'if'
     THEN = 'then'
     ELSE = 'else'
-    # WHILE = 'while'
-    # DO = 'do'
+    WHILE = 'while'
+    DO = 'do'
 
     NAME = r'[a-zA-Z_][a-zA-Z0-9_]*'
-    NUMBER = r'[\d.]+'
+    GLOBAL = r'@[a-zA-Z_][a-zA-Z0-9_]*'
+    NUMBER = r'\d+(\.\d+)?'
 
     # Special symbols
     EQUALEQUAL = '=='
@@ -62,9 +66,10 @@ class CalcLexer(Lexer):
     RCURLYBRACE = r'}'
     GREATERTHEN = r'>'
     LESSTHEN = r'<'
-    NOT = '!'
-    MOD = '%'
-    SEMI = ';'
+    NOT = r'!'
+    MOD = r'%'
+    SEMI = r';'
+    DOT = r'\.'
 
 
 
@@ -91,13 +96,14 @@ class CalcParser(Parser):
         ('left', LPAREN, RPAREN),
         ('left', GREATERTHEN, LESSTHEN),
         ('left', IF, THEN, ELSE),
-        ('right', UMINUS, UPLUS),
+        ('right', UMINUS, UPLUS, NUMBER),
         ('left', NEWLINE, SEMI),
 
         )
 
     def __init__(self, txt='', args=()):
         self.names = {'import': py_interface.import_LScript(('name',)), 'exec_py': py_interface.Exec(('code', 'namespace')), 'print':py_interface.print_obj(('object',)), 'input':py_interface.get_input(('object',))}
+        self.globals = {}
         self.text = txt
         self.args = args
 
@@ -122,11 +128,13 @@ class CalcParser(Parser):
     def statement(self, p):
         return p.statement1
 
-    def call(self, name, functioncall=()):
+    def call(self, name, functioncall=(), local=False):
         try:
-            return name.run({**self.names, **{x:y for x, y in zip(name.args, functioncall + (((None,) * (len(name.args) - len(functioncall))) if (len(name.args) > len(functioncall)) else ()))}})
+            if local:
+                return name.run(self.names)
+            else:
+                return name.run({**self.names, **{x:y for x, y in zip(name.args, functioncall + (((None,) * (len(name.args) - len(functioncall))) if (len(name.args) > len(functioncall)) else ()))}})
         except AttributeError:
-            raise
             print(f'{name!r} is not callable')
             raise Cancel
         except LookupError:
@@ -239,10 +247,28 @@ class CalcParser(Parser):
 
     @_('IF anything THEN anything ELSE anything')
     def if_statement(self, p):
-        if self.call(CalcParser(p.anything0[1:-1]), ()):
-            return self.call(CalcParser(p.anything1[1:-1]), ())
+        if self.call(CalcParser(p.anything0[1:-1]), (), True):
+            return self.call(CalcParser(p.anything1[1:-1]), (), True)
         else:
-            return self.call(CalcParser(p.anything2[1:-1]), ())
+            return self.call(CalcParser(p.anything2[1:-1]), (), True)
+
+    @_('WHILE anything DO anything')
+    def while_statement(self, p):
+        value = None
+        while self.call(CalcParser(p.anything0[1:-1]), (), True):
+            value = self.call(CalcParser(p.anything1[1:-1]), (), True)
+        return value
+
+    @_('expr DOT NAME')
+    def expr(self, p):
+        if not hasattr(p.expr, 'globals'):
+            print(f'{p.expr!r} is not a lambda')
+        try:
+            return p.expr.globals[p.NAME]
+        except LookupError:
+            print(f'Undefined name {p.expr!r}.{p.NAME!r}')
+            raise Cancel
+
 
 
 
@@ -257,18 +283,27 @@ class CalcParser(Parser):
     def expr(self, p):
         return p.if_statement
 
+    @_('while_statement')
+    def expr(self, p):
+        return p.while_statement
+
     @_('anything')
     def expr(self, p):
         return CalcParser(p.anything[1:-1])
 
-    @_('NAME functioncalldefine ASSIGN anything')
+    @_('anything functioncalldefine')
     def expr(self, p):
-        self.names[p.NAME] = CalcParser(p.anything[1:-1], p.functioncalldefine)
+        return CalcParser(p.anything[1:-1], p.functioncalldefine)
 
-    @_('NAME functioncalldefine COLONASSIGN anything')
-    def expr(self, p):
-        self.names[p.NAME] = CalcParser(p.anything[1:-1], p.functioncalldefine)
-        return self.names[p.NAME]
+
+    # @_('NAME functioncalldefine ASSIGN anything')
+    # def expr(self, p):
+    #     self.names[p.NAME] = CalcParser(p.anything[1:-1], p.functioncalldefine)
+    #
+    # @_('NAME functioncalldefine COLONASSIGN anything')
+    # def expr(self, p):
+    #     self.names[p.NAME] = CalcParser(p.anything[1:-1], p.functioncalldefine)
+    #     return self.names[p.NAME]
 
     @_('expr functioncall')
     def expr(self, p):
@@ -282,6 +317,31 @@ class CalcParser(Parser):
     def expr(self, p):
         self.names[p.NAME] = p.expr
         return p.expr
+
+    @_('GLOBAL ASSIGN expr')
+    def expr(self, p):
+        self.globals[p.GLOBAL[1:]] = p.expr
+
+    @_('GLOBAL COLONASSIGN expr')
+    def expr(self, p):
+        self.globals[p.GLOBAL[1:]] = p.expr
+        return p.expr
+
+    @_('expr DOT NAME ASSIGN expr')
+    def expr(self, p):
+        if hasattr(p.expr0, 'globals'):
+            p.expr0.globals[p.NAME] = p.expr
+        else:
+            print(f'{p.expr0} is not a lambda')
+
+    @_('expr DOT NAME COLONASSIGN expr')
+    def expr(self, p):
+        if hasattr(p.expr0, 'globals'):
+            p.expr0.globals[p.NAME] = p.expr1
+            return p.expr1
+        else:
+            print(f'{p.expr0} is not a lambda')
+
 
     @_('expr PLUS expr')
     def expr(self, p):
@@ -323,13 +383,9 @@ class CalcParser(Parser):
     def functioncalldefine(self, p):
         return ()
 
-    @_('LBRACKET argsdefine RBRACKET')
+    @_('LBRACKET NAME remainingargsdefine RBRACKET')
     def functioncalldefine(self, p):
-        return p.argsdefine
-
-    @_('NAME remainingargsdefine')
-    def argsdefine(self, p):
-        return (p.NAME, *p.remainingargsdefine)
+        return (p.NAME,) + p.remainingargsdefine
 
     @_('COMMA NAME remainingargsdefine')
     def remainingargsdefine(self, p):
@@ -370,13 +426,18 @@ class CalcParser(Parser):
 
     @_('NAME')
     def expr(self, p):
-        return self.get_name(p.NAME)
-
-    def get_name(self, name):
         try:
-            return self.names[name]
+            return self.names[p.NAME]
         except LookupError:
-            print(f'Undefined name {name!r}')
+            print(f'Undefined name {p.NAME!r}')
+            raise Cancel
+
+    @_('GLOBAL')
+    def expr(self, p):
+        try:
+            return self.globals[p.GLOBAL[1:]]
+        except LookupError:
+            print(f'Undefined name {p.GLOBAL[1:]!r}')
             raise Cancel
 
     def run(self, names):
@@ -384,9 +445,8 @@ class CalcParser(Parser):
         return self.parse(lexer.tokenize(self.text))
 
     def __str__(self):
-        args = str(list(self.args)).replace("'", "")
         text = '{' + self.text + '}'
-        return f'lambda{args} = ' + text
+        return f'lambda = {text} {list(self.args)}'
 
     def __repr__(self):
         return str(self)
@@ -609,20 +669,34 @@ class CalcParser(Parser):
         else:
             return p.SEMI
 
+    @_('GLOBAL dot_star')
+    def dot_star(self, p):
+        if p.GLOBAL:
+            return p.GLOBAL + ' ' + p.dot_star
+        else:
+            return p.GLOBAL
 
-    # @_('DO dot_star')
-    # def dot_star(self, p):
-    #     if p.dot_star:
-    #         return p.DO + ' ' + p.dot_star
-    #     else:
-    #         return p.DO
-    #
-    # @_('WHILE dot_star')
-    # def dot_star(self, p):
-    #     if p.dot_star:
-    #         return p.WHILE + ' ' + p.dot_star
-    #     else:
-    #         return p.WHILE
+    @_('WHILE dot_star')
+    def dot_star(self, p):
+        if p.WHILE:
+            return p.WHILE + ' ' + p.dot_star
+        else:
+            return p.WHILE
+
+    @_('DO dot_star')
+    def dot_star(self, p):
+        if p.DO:
+            return p.DO + ' ' + p.dot_star
+        else:
+            return p.DO
+
+    @_('DOT dot_star')
+    def dot_star(self, p):
+        if p.DOT:
+            return p.DOT + ' ' + p.dot_star
+        else:
+            return p.DOT
+
 
 
 def command_line():
@@ -643,6 +717,8 @@ def command_line():
 
         except Cancel:
             pass
+        except Exception as e:
+            print("INTERNAL ERROR: ", repr(e))
         else:
             if answer != None:
                 print(repr(answer))
@@ -651,7 +727,6 @@ def command_line():
 
 lexer = CalcLexer()
 parser = CalcParser()
-#parser.parse(lexer.tokenize("<'" + os.path.join(os.path.dirname(__file__), "__autoimport__'>")))
 args = sys.argv[1:]
 options = sum([x[1:] for x in args if x.startswith('-') and not x.startswith('--')])
 files = [x for x in args if not x.startswith('-')]
