@@ -1,6 +1,6 @@
 # LAMBDASCRIPT
 ## DOCUMENTATION
-LambdaScript is a lambda-oriented language. In fact, there are *no* functions or classes.
+LambdaScript is a lambda-oriented language. In fact, there are *no* functions.
 There are only anonymous lambdas. Apart from that, it works like you might expect.
 ```
 >> 1 + 2
@@ -131,5 +131,4 @@ lambda = { @data = d } ['d']
 'K'
 ```
 Note: __No__ initializing work is done for you. You'll have to build that into the class
-Of course, objects can have functions...
-TODO
+Of course, objects can have functions, but you'll have to explicitly pass the `self` value.
