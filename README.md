@@ -94,3 +94,39 @@ They can recurse
 >> factorial(4)
 24
 ```
+
+### CLASSES
+Classes are hard because there is no built-in class type.
+However, lambdas can have global variables...
+Global variables can be signified with a leading `@`
+```
+>> OneOffObject = {@data = d}[d]
+>> OneOffObject (4)
+>> OneOffObject.data
+4
+>> OneOffObject ('e')
+>> OneOffObject.data
+'e'
+```
+You *can* create classes, just make a lambda that returns the objects.
+```
+>> MyClass = {{@data = d}[d]}
+>> MyObject1 = MyClass ()
+>> MyObject2 = MyClass ()
+>> MyObject1(4092)
+>> MyObject2('K')
+>> MyObject2.data
+'K'
+>> MyObject1.data
+4092
+>> MyObject1.data = 3
+>> MyObject1.data
+3
+>> MyObject1.NotYetCreatedVar = 'alpha'
+>> MyObject1.NotYetCreatedVar
+'alpha'
+>> MyObject2
+lambda = { @data = d } ['d']
+>> MyObject2.data
+'K'
+```

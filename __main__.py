@@ -330,7 +330,7 @@ class CalcParser(Parser):
     @_('expr DOT NAME ASSIGN expr')
     def expr(self, p):
         if hasattr(p.expr0, 'globals'):
-            p.expr0.globals[p.NAME] = p.expr
+            p.expr0.globals[p.NAME] = p.expr1
         else:
             print(f'{p.expr0} is not a lambda')
 
