@@ -132,3 +132,32 @@ lambda = { @data = d } ['d']
 ```
 Note: __No__ initializing work is done for you. You'll have to build that into the class.
 Of course, objects can have functions, but you'll have to explicitly pass the `self` value.
+
+## INSTALLING
+LambdaScript requires the python module `sly`
+To install:
+```
+python3 -m pip install sly
+git clone https://github.com/eebop/LambdaScript.git
+cd LambdaScript
+```
+To run:
+```
+./__main__.py
+```
+Or, if you want a command line script to do it
+On Linix:
+```
+echo 'alias LambdaScript="python3 `pwd`"' >> ~/.bashrc
+```
+On Mac:
+```
+echo 'alias LambdaScript="python3 `pwd`"' >> ~/.bash_profile
+```
+Then:
+```
+bash
+LambdaScript
+```
+
+### DEPENDENCIES
