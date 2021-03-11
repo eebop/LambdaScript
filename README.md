@@ -145,12 +145,12 @@ To run:
 ```
 ./__main__.py
 ```
-Or, if you want a command line script to do it
-On Linix:
+Or, if you want a command line script to do it.
+##### Linix:
 ```
 echo 'alias LambdaScript="python3 `pwd`"' >> ~/.bashrc
 ```
-On Mac:
+##### On Mac:
 ```
 echo 'alias LambdaScript="python3 `pwd`"' >> ~/.bash_profile
 ```
