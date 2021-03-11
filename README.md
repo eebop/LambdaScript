@@ -20,6 +20,11 @@ There are only anonymous lambdas. Apart from that, it works like you might expec
 >> z := "e'"
 "e'"
 >> a = b := 3
+>> a = b := 3
+>> a
+3
+>> b
+3
 >> y
 3
 >> #comment
@@ -31,7 +36,26 @@ e>>
 
 ### CONDITIONALS AND WHILE LOOPS
 Conditionals will either return one value or another, depending on whether a third is non-zero.
-
+```
+>> if {0} then {1} else {2}
+2
+>> if {1} then {1} else {2}
+1
+```
+While loops will evaluate one section while another is non-zero.
+```
+>> while {l} do {print(l);print('\n');l = l-1}
+10.0
+9.0
+8.0
+7.0
+6.0
+5.0
+4.0
+3.0
+2.0
+1.0
+```
 
 ### LAMBDAS
 Lambdas are pieces of code that can be executed multiple times.
