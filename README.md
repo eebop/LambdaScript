@@ -130,5 +130,5 @@ lambda = { @data = d } ['d']
 >> MyObject2.data
 'K'
 ```
-Note: __No__ initializing work is done for you. You'll have to build that into the class
+Note: __No__ initializing work is done for you. You'll have to build that into the class.
 Of course, objects can have functions, but you'll have to explicitly pass the `self` value.
